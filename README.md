@@ -31,7 +31,7 @@ A DeepSeek Harness (DSH) plugin that exposes the live harness tool registry over
 2. Add the plugin to your DSH web profile:
 
    ```sh
-   dsh plugin --profile web add .
+   dsh plugin --profile web add ./dsh-mcp-server
    ```
 
 3. Generate a strong bearer token:
