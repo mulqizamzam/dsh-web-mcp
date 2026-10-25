@@ -1,0 +1,9 @@
+- insert:
+    - id: mcp-server
+      name: dsh-mcp-server
+      config:
+        # Replace with a random secret before serving. Treat it as a credential:
+        # anyone holding it can run every harness tool on this machine.
+        token: CHANGE_ME
+        # The DeepSeek++ extension id, or any other MCP client origin.
+        allowedOrigins: []
