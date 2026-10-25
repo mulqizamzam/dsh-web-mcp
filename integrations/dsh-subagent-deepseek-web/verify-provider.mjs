@@ -7,8 +7,11 @@
  * Run: node verify-provider.mjs
  */
 
-const BASE = 'file:///F:/REISEN_Migrated/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai'
-const { Context } = await import(`${BASE}/cordis/lib/index.js`)
+const cordisEntry = process.env.DSH_CORDIS_ENTRY
+if (!cordisEntry) {
+  throw new Error('Set DSH_CORDIS_ENTRY to the installed DSH Cordis module entry before running this provider verification.')
+}
+const { Context } = await import(cordisEntry)
 const plugin = await import('./index.js')
 
 let registered
