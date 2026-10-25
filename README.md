@@ -118,7 +118,7 @@ Run the core protocol verification in an environment with the target DSH install
 DSH_CORDIS_ENTRY=/absolute/path/to/cordis/lib/index.js node dsh-mcp-server/verify-protocol.mjs
 ```
 
-Run the optional provider verification scripts only in an environment where their documented DSH/browser prerequisites are available. This repository was reconciled from upstream source; a successful local static review is not equivalent to a live integration test on DSH 0.2.1-rc.2.
+Run the optional provider verification with `DSH_CORDIS_ENTRY=/absolute/path/to/cordis/lib/index.js node integrations/dsh-subagent-deepseek-web/verify-provider.mjs`; run the live verification only in an environment where its documented DSH/browser prerequisites are available. This repository was reconciled from upstream source; a successful local static review is not equivalent to a live integration test on DSH 0.2.1-rc.2.
 
 ## Troubleshooting
 
