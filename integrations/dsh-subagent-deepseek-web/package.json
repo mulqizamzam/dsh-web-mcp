@@ -1,0 +1,32 @@
+{
+  "name": "dsh-subagent-deepseek-web",
+  "version": "0.2.1-rc.2",
+  "description": "Optional DeepSeek Harness subagent provider delegating child tasks to a DeepSeek web conversation.",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "subagent",
+    "deepseek",
+    "browser-extension"
+  ],
+  "files": [
+    "index.js",
+    "bridge.js",
+    "tools.js",
+    "cordis.patch.yml",
+    "skill/SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
