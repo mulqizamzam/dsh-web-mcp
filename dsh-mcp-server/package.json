@@ -1,0 +1,31 @@
+{
+  "name": "dsh-web-mcp",
+  "version": "0.2.1-rc.2",
+  "description": "Authenticated Streamable HTTP MCP server exposing the DeepSeek Harness tool registry to trusted MCP clients.",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "mcp",
+    "model-context-protocol",
+    "streamable-http"
+  ],
+  "files": [
+    "index.js",
+    "protocol.js",
+    "trust.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
