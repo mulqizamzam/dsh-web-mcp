@@ -1,93 +1,129 @@
 # dsh-web-mcp
 
-A DeepSeek Harness (DSH) plugin that exposes the live harness tool registry over authenticated Model Context Protocol (MCP) Streamable HTTP. MCP clients can use the same guarded tool execution pipeline as the harness. The upstream project's optional DeepSeek web subagent integration is retained under `integrations/dsh-subagent-deepseek-web/`.
+**dsh-web-mcp** adalah plugin untuk DeepSeek Harness (DSH). Plugin ini membuat tools yang tersedia di DSH dapat diakses oleh aplikasi lain melalui protokol MCP (Model Context Protocol) menggunakan HTTP lokal yang dilindungi token.
 
-> **Release candidate:** 0.2.1-rc.2 (target harness version). The upstream components were documented as verified against DSH 0.1.0-rc.6. This port does not claim compatibility with 0.2.1-rc.2 until the target harness's plugin loader and tests have been run against that exact release.
+> **Status versi:** package ditandai `0.2.1-rc.2`, sesuai target port. Namun, kompatibilitas dengan DSH `0.2.1-rc.2` belum diverifikasi secara langsung. Dokumentasi sumber menyebut baseline pengujian DSH `0.1.0-rc.6`.
 
-## Features
+## Apa yang bisa dilakukan?
 
-- Serves DSH tools through an MCP Streamable HTTP endpoint.
-- Uses the harness tool execution pipeline, including its guards and output validation.
-- Bearer-token authentication, host/origin checks, request-size limits, and tool-call timeouts.
-- Optional DeepSeek web subagent provider integration for delegating tasks to a browser session.
-- Node.js ES modules; the core plugin declares no npm runtime dependencies.
+- Menyediakan tools DSH melalui endpoint MCP Streamable HTTP.
+- Menggunakan pipeline eksekusi tools DSH beserta pemeriksaan yang dimiliki harness.
+- Melindungi endpoint dengan bearer token dan pemeriksaan host/origin.
+- Mengatur batas ukuran request dan waktu tunggu pemanggilan tool.
+- Menyertakan integrasi opsional untuk mendelegasikan tugas ke percakapan DeepSeek web.
 
-## Requirements
+## Persiapan
 
-- Node.js 20 or newer.
-- DeepSeek Harness installed and runnable.
-- An MCP client that supports Streamable HTTP, if connecting an external client.
-- For browser-based delegation, the compatible DeepSeek++ delegate extension and a configured browser session.
+Sebelum mulai, pastikan Anda memiliki:
 
-## Install the core plugin
+1. Node.js versi 20 atau lebih baru.
+2. Git.
+3. DeepSeek Harness (DSH) yang sudah terpasang.
+4. Klien MCP yang mendukung Streamable HTTP jika ingin menghubungkan aplikasi lain.
 
-1. Clone this repository:
+Periksa instalasi Node.js dengan `node --version` dan DSH dengan `dsh --help`.
 
-   ```sh
-   git clone https://github.com/mulqizamzam/dsh-web-mcp.git
-   cd dsh-web-mcp
-   ```
+## Instalasi langkah demi langkah
 
-2. Add the plugin to your DSH web profile:
+### 1. Unduh kode
 
-   ```sh
-   dsh plugin --profile web add ./dsh-mcp-server
-   ```
+Buka terminal, lalu jalankan:
 
-3. Generate a strong bearer token:
+```sh
+git clone https://github.com/mulqizamzam/dsh-web-mcp.git
+cd dsh-web-mcp
+```
 
-   ```sh
-   node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
-   ```
+### 2. Buat token rahasia
 
-4. Put the token in the plugin's profile configuration (see [Configuration](#configuration)). Never commit the real token. The checked-in patch template uses `CHANGE_ME` as a placeholder; replace it before starting a server.
+Token diperlukan agar hanya klien yang mengetahui token yang dapat mengakses endpoint MCP. Buat token acak dengan perintah:
 
-5. Start DSH:
+```sh
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
 
-   ```sh
-   dsh web
-   ```
+Salin hasilnya dan simpan secara aman. Jangan membagikan token atau menyimpannya di repository publik.
 
-The default endpoint is `http://127.0.0.1:3080/mcp`.
+### 3. Masukkan token ke konfigurasi
 
-## Configuration
+Buka file `dsh-mcp-server/cordis.patch.yml` menggunakan editor teks. Temukan nilai placeholder `CHANGE_ME`, lalu ganti dengan token yang Anda buat. Struktur konfigurasi umumnya seperti berikut:
 
-The plugin's DSH bundle patch is in `cordis.patch.yml`. Configure the inserted `mcp-server` component in the DSH profile. Supported options in the upstream implementation:
+```yaml
+- insert:
+    - id: mcp-server
+      name: dsh-mcp-server
+      config:
+        token: "GANTI_DENGAN_TOKEN_RAHASIA_ANDA"
+        allowedOrigins: []
+```
 
-| Setting | Default | Purpose |
+Ganti teks contoh tersebut dengan token asli Anda. Jangan commit file yang berisi token asli ke Git.
+
+Untuk pemakaian melalui browser, tambahkan origin ekstensi browser yang tepat ke `allowedOrigins` jika diperlukan. Jangan menambahkan origin yang tidak Anda kenal.
+
+### 4. Pasang plugin
+
+Pastikan terminal berada di direktori utama repository `dsh-web-mcp`, lalu jalankan:
+
+```sh
+dsh plugin --profile web add ./dsh-mcp-server
+```
+
+Perintah ini memasang plugin ke profil DSH bernama `web`. Jika profil Anda berbeda, sesuaikan nama profil berdasarkan konfigurasi DSH Anda.
+
+### 5. Jalankan DSH
+
+```sh
+dsh web
+```
+
+Endpoint default plugin adalah:
+
+`http://127.0.0.1:3080/mcp`
+
+Alamat ini ditujukan untuk akses lokal pada komputer yang sama.
+
+### 6. Hubungkan klien MCP
+
+Di pengaturan MCP aplikasi klien, tambahkan server baru dengan nilai berikut:
+
+| Pengaturan | Nilai |
+| --- | --- |
+| Transport | `streamable_http` |
+| URL | `http://127.0.0.1:3080/mcp` |
+| Autentikasi | Bearer token |
+| Token | Token rahasia yang dibuat pada langkah 2 |
+
+Nama menu dapat berbeda di setiap aplikasi. Jika aplikasi meminta bearer token, masukkan token yang sama dengan konfigurasi plugin.
+
+## Pengaturan yang tersedia
+
+Opsi berikut didokumentasikan oleh implementasi sumber. Opsi harus berada di bagian `config` pada komponen `mcp-server`.
+
+| Opsi | Default | Fungsi |
 | --- | --- | --- |
-| `path` | `/mcp` | HTTP endpoint pathname |
-| `token` | required | Bearer credential for every request |
-| `agentPreset` | unset | Select the newest session on a named preset |
-| `sessionId` | unset | Pin requests to one exact session |
-| `allowedOrigins` | `[]` | Browser origins allowed to connect |
-| `trustedHosts` | `[]` | Additional non-loopback `host:port` authorities |
-| `maxRequestBytes` | `1048576` | Maximum request body size |
-| `toolTimeoutMs` | `300000` | Timeout for one MCP tool call |
+| `path` | `/mcp` | Jalur endpoint HTTP. |
+| `token` | Wajib | Token autentikasi untuk request. |
+| `agentPreset` | Tidak diatur | Memilih sesi terbaru dari preset agent tertentu. |
+| `sessionId` | Tidak diatur | Memilih satu sesi dengan ID tertentu. |
+| `allowedOrigins` | `[]` | Origin browser yang diizinkan. |
+| `trustedHosts` | `[]` | Host non-loopback tambahan yang dipercaya. |
+| `maxRequestBytes` | `1048576` | Ukuran maksimum body request (1 MiB). |
+| `toolTimeoutMs` | `300000` | Batas waktu satu pemanggilan tool (5 menit). |
 
-Prefer `agentPreset` when multiple sessions may be open. Session IDs are created per run. Do not expose the endpoint to untrusted networks: the token grants access to mounted tools, potentially including shell execution. Use a unique secret, restrict origins and trusted hosts, and keep the endpoint on loopback unless remote access is deliberately secured.
+Jika beberapa sesi DSH terbuka bersamaan, atur `agentPreset` atau `sessionId` agar klien menggunakan sesi yang dimaksud.
 
-## Connect an MCP client
+## Integrasi opsional: DeepSeek web subagent
 
-Configure the client with:
+Folder `integrations/dsh-subagent-deepseek-web/` berisi plugin tambahan untuk mendelegasikan tugas dari agent DSH ke percakapan DeepSeek web. Ini **bukan bagian yang wajib** untuk menggunakan MCP server inti.
 
-- **Transport:** `streamable_http`
-- **URL:** `http://127.0.0.1:3080/mcp`
-- **Authentication:** bearer token generated above
-
-For the DeepSeek++ browser extension, add the endpoint in its MCP settings and grant host access to the local DSH origin when prompted.
-
-## Optional: install the DeepSeek web subagent integration
-
-The upstream subagent provider is retained at `integrations/dsh-subagent-deepseek-web/`. It delegates child tasks to a DeepSeek web conversation and returns the result to the parent harness agent. It requires the browser-side delegate and the MCP bridge to be configured.
-
-From the repository root:
+Pasang integrasi setelah core plugin siap:
 
 ```sh
 dsh plugin --profile web add ./integrations/dsh-subagent-deepseek-web
 ```
 
-The model-facing tool row is configured in the chosen agent preset, not in the provider's host-plane patch:
+Tool provider juga harus ditambahkan ke preset agent yang dipakai:
 
 ```yaml
 - id: tool-subagent-deepseek-web
@@ -99,41 +135,47 @@ The model-facing tool row is configured in the chosen agent preset, not in the p
     maxDepth: provider-managed
 ```
 
-Use `maxDepth: provider-managed` as shown: the upstream provider does not advertise a numeric depth-limit capability. See the integration's README for task queue behavior and settings.
+Fitur ini memerlukan browser delegate DeepSeek yang kompatibel, sesi DeepSeek web, serta MCP bridge yang berjalan. Untuk petunjuk lebih lanjut, baca [README integrasi](integrations/dsh-subagent-deepseek-web/README.md).
 
-## Development and verification
+## Menjalankan pemeriksaan
 
-Core source files:
-
-- `index.js` — plugin registration and HTTP endpoint.
-- `protocol.js` — MCP protocol handling.
-- `trust.js` — request trust checks.
-- `verify-protocol.mjs` — protocol verification script.
-
-Optional subagent source is under `integrations/dsh-subagent-deepseek-web/`.
-
-Run the core protocol verification in an environment with the target DSH installation available. Set `DSH_CORDIS_ENTRY` to the installed Cordis module entry (a file URL or resolvable module specifier):
+Skrip verifikasi memerlukan instalasi DSH dan modul Cordis yang sesuai. Ganti path contoh di bawah dengan lokasi sebenarnya pada komputer Anda:
 
 ```sh
-DSH_CORDIS_ENTRY=/absolute/path/to/cordis/lib/index.js node dsh-mcp-server/verify-protocol.mjs
+DSH_CORDIS_ENTRY=/path/ke/cordis/lib/index.js node dsh-mcp-server/verify-protocol.mjs
 ```
 
-Run the optional provider verification with `DSH_CORDIS_ENTRY=/absolute/path/to/cordis/lib/index.js node integrations/dsh-subagent-deepseek-web/verify-provider.mjs`; run the live verification only in an environment where its documented DSH/browser prerequisites are available. This repository was reconciled from upstream source; a successful local static review is not equivalent to a live integration test on DSH 0.2.1-rc.2.
+Untuk memeriksa provider opsional:
 
-## Troubleshooting
+```sh
+DSH_CORDIS_ENTRY=/path/ke/cordis/lib/index.js node integrations/dsh-subagent-deepseek-web/verify-provider.mjs
+```
 
-- **401/unauthorized:** confirm the client sends `Authorization: Bearer <token>` and the token matches the active DSH profile.
-- **Origin rejected:** add only the exact browser origin to `allowedOrigins`; avoid wildcard trust.
-- **Host rejected:** keep the service on loopback or explicitly configure a trusted `host:port` after reviewing the network exposure.
-- **No active session / empty tool catalog:** select the intended `agentPreset` or exact `sessionId`; tool catalogs are scoped to an agent/session.
-- **Tool call times out:** check the target tool's execution time and adjust `toolTimeoutMs` only as needed.
-- **Subagent tool is unavailable:** verify the provider plugin is installed and the tool row is present in the selected agent preset.
-- **Compatibility errors:** check the exact DSH version and plugin loader API. The source's documented baseline is older than the requested target.
+Skrip live memerlukan server DSH yang berjalan, plugin terkait yang terpasang, dan sesi browser yang sesuai. Keberadaan skrip bukan bukti bahwa tes sudah dijalankan atau lulus. Jalankan pengujian pada DSH `0.2.1-rc.2` sebelum menganggap kompatibilitas terverifikasi.
 
-## Security notes
+## Pemecahan masalah
 
-The bearer token is highly privileged: a holder may be able to invoke any tool mounted in the selected harness session, including commands that modify or delete files. Keep credentials out of version control, logs, issue reports, and screenshots. Use least privilege and review all mounted tools before enabling external clients.
+| Masalah | Solusi awal |
+| --- | --- |
+| `401 Unauthorized` | Pastikan token di konfigurasi sama dengan token yang dikirim klien sebagai bearer token. |
+| Origin ditolak | Periksa origin browser yang tepat pada `allowedOrigins`. |
+| Host ditolak | Gunakan alamat loopback atau tinjau konfigurasi `trustedHosts`. |
+| Tools tidak muncul | Pastikan sesi DSH aktif dan `agentPreset`/`sessionId` mengarah ke sesi yang benar. |
+| Pemanggilan tool timeout | Periksa proses tool; naikkan `toolTimeoutMs` hanya jika diperlukan. |
+| Tool subagent tidak tersedia | Pastikan integrasi opsional dipasang dan tool provider ada di preset agent. |
+| Plugin gagal dimuat | Periksa versi DSH, output terminal, dan file `cordis.patch.yml`. |
+| Perintah `dsh` tidak ditemukan | Pastikan DSH sudah dipasang dan tersedia di PATH. |
 
-## License
+## Keamanan
 
-Core plugin files retain the upstream MIT license. The optional browser delegate's upstream license and attribution requirements apply to that integration; see its license file and upstream project notices.
+Bearer token memberi akses ke tools pada sesi DSH yang dipilih. Tools tersebut dapat mencakup akses file dan perintah shell.
+
+- Buat token acak dan unik.
+- Jangan commit token ke GitHub.
+- Batasi origin dan host yang dipercaya.
+- Jangan membuka endpoint ke internet atau jaringan publik tanpa perlindungan yang sesuai.
+- Periksa tools yang tersedia sebelum memberi akses kepada klien lain.
+
+## Lisensi
+
+File plugin inti mempertahankan lisensi MIT dari sumber. Untuk integrasi browser/subagent, baca file lisensi pada direktori integrasi dan perhatikan ketentuan atribusi proyek upstream.
