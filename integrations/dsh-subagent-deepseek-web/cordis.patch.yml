@@ -1,0 +1,20 @@
+# The provider is a host-plane singleton: one registration per process serves
+# every session. The model-facing tool row is NOT here — it belongs to an agent
+# preset, because whether an agent may delegate to the browser is a per-preset
+# choice. Add this to the preset's agent.cordis.yml:
+#
+#   - id: tool-subagent-deepseek-web
+#     name: '@deepseek-ai/dsh-tool-subagent'
+#     config:
+#       provider: deepseek-web
+#       toolName: subagent_deepseek_web
+#       enableRunInBackground: false
+#       maxDepth: provider-managed
+#
+# `maxDepth: provider-managed` is required, not stylistic: this provider
+# advertises no `depthLimit` capability, and a numeric cap fails at mount.
+# `backgroundMode` must stay at its `one-shot` default — a continuable child
+# needs `prepareContinuable`, which only in-process providers can offer.
+- insert:
+    - id: subagent-deepseek-web
+      name: dsh-subagent-deepseek-web
