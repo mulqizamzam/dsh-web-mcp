@@ -112,10 +112,10 @@ Core source files:
 
 Optional subagent source is under `integrations/dsh-subagent-deepseek-web/`.
 
-Run the available core protocol verification:
+Run the core protocol verification in an environment with the target DSH installation available. Set `DSH_CORDIS_ENTRY` to the installed Cordis module entry (a file URL or resolvable module specifier):
 
 ```sh
-node dsh-mcp-server/verify-protocol.mjs
+DSH_CORDIS_ENTRY=/absolute/path/to/cordis/lib/index.js node dsh-mcp-server/verify-protocol.mjs
 ```
 
 Run the optional provider verification scripts only in an environment where their documented DSH/browser prerequisites are available. This repository was reconciled from upstream source; a successful local static review is not equivalent to a live integration test on DSH 0.2.1-rc.2.
